@@ -1,43 +1,50 @@
-pipeline {  
-    agent any  
-        stages {  
-       	    stage("git_checkout") {  
-           	    steps {  
-              	    echo "cloning repository" 
-              	    echo "repo cloned successfully"  
-              	    }  
-         	    } 
-        }
 pipeline {
     agent any
+
+    environment {
+        IMAGE_NAME = "onlinebookstore"
+        CONTAINER_NAME = "onlinebookstore-container"
+    }
 
     stages {
 
         stage('Clone Repository') {
             steps {
-                git branch: 'main',
+                git branch: 'master',
                 url: 'https://github.com/Akshu1520/onlinebookstore.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t onlinebookstore .'
+                sh '''
+                docker build -t $IMAGE_NAME .
+                '''
             }
         }
 
         stage('Deploy Container') {
             steps {
                 sh '''
-                docker stop onlinebookstore || true
-                docker rm onlinebookstore || true
+                docker stop $CONTAINER_NAME || true
+                docker rm $CONTAINER_NAME || true
 
                 docker run -d \
-                --name onlinebookstore \
+                --name $CONTAINER_NAME \
                 -p 8081:80 \
-                onlinebookstore
+                $IMAGE_NAME
                 '''
             }
         }
     }
-}}
+
+    post {
+        success {
+            echo 'Deployment Successful'
+        }
+
+        failure {
+            echo 'Pipeline Failed'
+        }
+    }
+}
